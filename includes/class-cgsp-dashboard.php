@@ -3,9 +3,11 @@ defined('ABSPATH') || exit;
 
 class CGSP_Dashboard {
     const QUERY_VAR = 'cgsp_dashboard';
+    const ROUTE_VERSION = '1';
 
     public function __construct() {
         add_action('init', array($this, 'rewrite'));
+        add_action('init', array($this, 'maybe_flush_rewrites'), 99);
         add_filter('query_vars', array($this, 'query_vars'));
         add_action('template_redirect', array($this, 'render'));
         add_action('admin_post_cgsp_dashboard_publish', array($this, 'handle_publish'));
@@ -15,14 +17,23 @@ class CGSP_Dashboard {
     public static function activate() {
         add_rewrite_rule('^publisher/?$', 'index.php?' . self::QUERY_VAR . '=1', 'top');
         flush_rewrite_rules();
+        update_option('cgsp_dashboard_route_version', self::ROUTE_VERSION, false);
     }
 
     public static function deactivate() {
+        delete_option('cgsp_dashboard_route_version');
         flush_rewrite_rules();
     }
 
     public function rewrite() {
         add_rewrite_rule('^publisher/?$', 'index.php?' . self::QUERY_VAR . '=1', 'top');
+    }
+
+    public function maybe_flush_rewrites() {
+        if (get_option('cgsp_dashboard_route_version') !== self::ROUTE_VERSION) {
+            flush_rewrite_rules(false);
+            update_option('cgsp_dashboard_route_version', self::ROUTE_VERSION, false);
+        }
     }
 
     public function query_vars($vars) {
@@ -34,21 +45,17 @@ class CGSP_Dashboard {
         if (!get_query_var(self::QUERY_VAR)) {
             return;
         }
-
         if (!is_user_logged_in()) {
             auth_redirect();
         }
         if (!current_user_can('manage_options')) {
-            wp_die(esc_html__('אין לך הרשאה להיכנס למערכת הפרסום.', 'cyberguard-social-publisher'), 403);
+            wp_die(esc_html__('אין לך הרשאה להיכנס למערכת הפרסום.', 'cyberguard-social-publisher'), '', array('response' => 403));
         }
 
         show_admin_bar(false);
         wp_enqueue_media();
         wp_enqueue_style('cgsp-dashboard', CGSP_URL . 'assets/dashboard.css', array(), CGSP_VERSION);
         wp_enqueue_script('cgsp-dashboard', CGSP_URL . 'assets/dashboard.js', array('jquery'), CGSP_VERSION, true);
-        wp_localize_script('cgsp-dashboard', 'CGSPDashboard', array(
-            'dashboardUrl' => home_url('/publisher/'),
-        ));
 
         $notice = isset($_GET['cgsp_notice']) ? sanitize_key(wp_unslash($_GET['cgsp_notice'])) : '';
         $content_library = $this->load_content_library();
@@ -65,7 +72,6 @@ class CGSP_Dashboard {
     public function handle_publish() {
         $this->guard();
         check_admin_referer('cgsp_dashboard_publish');
-
         $platforms = isset($_POST['platforms']) ? array_intersect(array('website', 'facebook', 'instagram'), array_map('sanitize_key', (array) wp_unslash($_POST['platforms']))) : array();
         $payload = array(
             'title' => isset($_POST['title']) ? sanitize_text_field(wp_unslash($_POST['title'])) : '',
@@ -73,7 +79,6 @@ class CGSP_Dashboard {
             'image_url' => isset($_POST['image_url']) ? esc_url_raw(wp_unslash($_POST['image_url'])) : '',
             'platforms' => $platforms,
         );
-
         if (empty($payload['message']) || empty($platforms)) {
             $this->redirect('invalid');
         }
@@ -133,12 +138,7 @@ class CGSP_Dashboard {
             }
             foreach ($hooks['cgsp_publish_scheduled_post'] as $key => $event) {
                 $payload = isset($event['args'][0]) && is_array($event['args'][0]) ? $event['args'][0] : array();
-                $items[] = array(
-                    'timestamp' => (int) $timestamp,
-                    'key' => (string) $key,
-                    'args' => isset($event['args']) ? $event['args'] : array(),
-                    'payload' => $payload,
-                );
+                $items[] = array('timestamp' => (int) $timestamp,'key' => (string) $key,'args' => isset($event['args']) ? $event['args'] : array(),'payload' => $payload);
             }
         }
         usort($items, function ($a, $b) { return $a['timestamp'] <=> $b['timestamp']; });
@@ -170,7 +170,7 @@ class CGSP_Dashboard {
 
     private function guard() {
         if (!is_user_logged_in() || !current_user_can('manage_options')) {
-            wp_die(esc_html__('אין לך הרשאה לבצע פעולה זו.', 'cyberguard-social-publisher'), 403);
+            wp_die(esc_html__('אין לך הרשאה לבצע פעולה זו.', 'cyberguard-social-publisher'), '', array('response' => 403));
         }
     }
 
