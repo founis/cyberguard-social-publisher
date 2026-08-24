@@ -78,8 +78,9 @@ class CGSP_Admin {
     public function handle_publish() {
         $this->guard();
         check_admin_referer('cgsp_publish');
-        $platforms = isset($_POST['platforms']) ? array_intersect(array('facebook', 'instagram'), array_map('sanitize_key', (array) wp_unslash($_POST['platforms']))) : array();
+        $platforms = isset($_POST['platforms']) ? array_intersect(array('website', 'facebook', 'instagram'), array_map('sanitize_key', (array) wp_unslash($_POST['platforms']))) : array();
         $payload = array(
+            'title' => isset($_POST['title']) ? sanitize_text_field(wp_unslash($_POST['title'])) : '',
             'message' => isset($_POST['message']) ? sanitize_textarea_field(wp_unslash($_POST['message'])) : '',
             'image_url' => isset($_POST['image_url']) ? esc_url_raw(wp_unslash($_POST['image_url'])) : '',
             'platforms' => $platforms,
@@ -87,6 +88,10 @@ class CGSP_Admin {
         if (empty($payload['message']) || empty($platforms)) {
             $this->redirect('cgsp-publisher', 'invalid');
         }
+        if (in_array('website', $platforms, true) && empty($payload['title'])) {
+            $this->redirect('cgsp-publisher', 'missing_title');
+        }
+
         $schedule = isset($_POST['schedule_at']) ? sanitize_text_field(wp_unslash($_POST['schedule_at'])) : '';
         if ($schedule) {
             $timestamp = strtotime($schedule . ' ' . wp_timezone_string());
@@ -96,6 +101,7 @@ class CGSP_Admin {
                 $this->redirect('cgsp-publisher', 'scheduled');
             }
         }
+
         (new CGSP_Social_API())->publish($payload);
         $this->redirect('cgsp-publisher', 'published');
     }
