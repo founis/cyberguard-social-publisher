@@ -28,7 +28,23 @@ class CGSP_Admin {
         $this->guard();
         $notice = isset($_GET['cgsp_notice']) ? sanitize_key(wp_unslash($_GET['cgsp_notice'])) : '';
         $logs = CGSP_Logger::recent();
+        $content_library = $this->load_content_library();
         include CGSP_DIR . 'admin/publisher-page.php';
+    }
+
+    private function load_content_library() {
+        $path = CGSP_DIR . 'content/cyberguard-posts.json';
+        if (!is_readable($path)) {
+            return array();
+        }
+        $json = file_get_contents($path);
+        $posts = json_decode($json, true);
+        if (!is_array($posts)) {
+            return array();
+        }
+        return array_values(array_filter($posts, function ($post) {
+            return is_array($post) && !empty($post['message']) && (!isset($post['status']) || 'ready' === $post['status']);
+        }));
     }
 
     public function render_settings() {
