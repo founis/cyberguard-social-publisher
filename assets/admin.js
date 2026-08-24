@@ -28,16 +28,19 @@
 
         $('.cgsp-load-post').on('click', function () {
             var $button = $(this);
+            var title = $button.attr('data-title') || '';
             var message = $button.attr('data-message') || '';
             var imageUrl = $button.attr('data-image-url') || '';
 
+            $('#cgsp-title').val(title);
             $('#cgsp-message').val(message).trigger('input');
             $('#cgsp-image-url').val(imageUrl).trigger('change');
+            $('#cgsp-platform-website').prop('checked', $button.attr('data-website') === '1');
             $('#cgsp-platform-facebook').prop('checked', $button.attr('data-facebook') === '1');
             $('#cgsp-platform-instagram').prop('checked', $button.attr('data-instagram') === '1');
 
             $('html, body').animate({ scrollTop: $('#cgsp-editor-card').offset().top - 40 }, 300);
-            $('#cgsp-message').trigger('focus');
+            $('#cgsp-title').trigger('focus');
         });
 
         $('#cgsp-library-search').on('input', function () {
