@@ -14,10 +14,12 @@ class CGSP_Social_API {
     }
 
     public function publish($payload) {
-        $payload = wp_parse_args($payload, array('message' => '', 'image_url' => '', 'platforms' => array()));
+        $payload = wp_parse_args($payload, array('title' => '', 'message' => '', 'image_url' => '', 'platforms' => array()));
         $results = array();
         foreach ((array) $payload['platforms'] as $platform) {
-            if ('facebook' === $platform) {
+            if ('website' === $platform) {
+                $results['website'] = $this->publish_website($payload);
+            } elseif ('facebook' === $platform) {
                 $results['facebook'] = $this->publish_facebook($payload);
             } elseif ('instagram' === $platform) {
                 $results['instagram'] = $this->publish_instagram($payload);
@@ -31,6 +33,40 @@ class CGSP_Social_API {
             return new WP_Error('cgsp_missing_settings', 'יש להזין מזהה עמוד ו־Access Token.');
         }
         return $this->request('GET', $this->settings['page_id'], array('fields' => 'id,name'));
+    }
+
+    private function publish_website($payload) {
+        if (empty($payload['title'])) {
+            return $this->failure('website', 'חסרה כותרת לפוסט באתר.');
+        }
+
+        $content = '';
+        if (!empty($payload['image_url'])) {
+            $content .= '<figure class="wp-block-image"><img src="' . esc_url($payload['image_url']) . '" alt="' . esc_attr($payload['title']) . '"></figure>';
+        }
+        $content .= wpautop(esc_html($payload['message']));
+
+        $post_id = wp_insert_post(array(
+            'post_type' => 'post',
+            'post_status' => 'publish',
+            'post_title' => wp_strip_all_tags($payload['title']),
+            'post_content' => wp_kses_post($content),
+            'post_excerpt' => wp_trim_words(wp_strip_all_tags($payload['message']), 32, '…'),
+        ), true);
+
+        if (is_wp_error($post_id)) {
+            return $this->failure('website', $post_id->get_error_message());
+        }
+
+        if (!empty($payload['image_url'])) {
+            $attachment_id = attachment_url_to_postid($payload['image_url']);
+            if ($attachment_id) {
+                set_post_thumbnail($post_id, $attachment_id);
+            }
+        }
+
+        CGSP_Logger::add('website', 'success', 'הפוסט פורסם באתר.', (string) $post_id);
+        return array('id' => $post_id, 'url' => get_permalink($post_id));
     }
 
     private function publish_facebook($payload) {
