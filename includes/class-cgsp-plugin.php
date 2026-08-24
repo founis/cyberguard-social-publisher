@@ -4,6 +4,7 @@ defined('ABSPATH') || exit;
 require_once CGSP_DIR . 'includes/class-cgsp-logger.php';
 require_once CGSP_DIR . 'includes/class-cgsp-social-api.php';
 require_once CGSP_DIR . 'includes/class-cgsp-admin.php';
+require_once CGSP_DIR . 'includes/class-cgsp-dashboard.php';
 
 final class CGSP_Plugin {
     private static $instance;
@@ -18,6 +19,7 @@ final class CGSP_Plugin {
     private function __construct() {
         add_action('plugins_loaded', array($this, 'load_textdomain'));
         add_action('cgsp_publish_scheduled_post', array($this, 'publish_scheduled'), 10, 1);
+        new CGSP_Dashboard();
         if (is_admin()) {
             new CGSP_Admin();
         }
@@ -35,10 +37,12 @@ final class CGSP_Plugin {
             'instagram_id' => '',
             'access_token' => '',
         ));
+        CGSP_Dashboard::activate();
     }
 
     public static function deactivate() {
         wp_clear_scheduled_hook('cgsp_publish_scheduled_post');
+        CGSP_Dashboard::deactivate();
     }
 
     public function publish_scheduled($payload) {
