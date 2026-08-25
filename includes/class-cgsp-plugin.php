@@ -5,6 +5,7 @@ require_once CGSP_DIR . 'includes/class-cgsp-logger.php';
 require_once CGSP_DIR . 'includes/class-cgsp-social-api.php';
 require_once CGSP_DIR . 'includes/class-cgsp-admin.php';
 require_once CGSP_DIR . 'includes/class-cgsp-dashboard.php';
+require_once CGSP_DIR . 'includes/class-cgsp-case-status.php';
 
 final class CGSP_Plugin {
     private static $instance;
@@ -20,6 +21,7 @@ final class CGSP_Plugin {
         add_action('plugins_loaded', array($this, 'load_textdomain'));
         add_action('cgsp_publish_scheduled_post', array($this, 'publish_scheduled'), 10, 1);
         new CGSP_Dashboard();
+        new CGSP_Case_Status();
         if (is_admin()) {
             new CGSP_Admin();
         }
