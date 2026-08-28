@@ -50,6 +50,10 @@ class CGSP_Case_Status {
         $phone_last4 = get_post_meta($post->ID, '_cgsp_phone_last4', true);
         $stage = get_post_meta($post->ID, '_cgsp_stage', true);
         $note = get_post_meta($post->ID, '_cgsp_customer_note', true);
+        $account_birth_date = get_post_meta($post->ID, '_cgsp_account_birth_date', true);
+        $age_verification = get_post_meta($post->ID, '_cgsp_age_verification', true);
+        $linked_assets = (array) get_post_meta($post->ID, '_cgsp_linked_meta_assets', true);
+        $age_diagnostic_note = get_post_meta($post->ID, '_cgsp_age_diagnostic_note', true);
         $updated = get_post_meta($post->ID, '_cgsp_status_updated', true);
         ?>
         <div dir="rtl" style="display:grid;gap:16px;max-width:760px">
@@ -61,6 +65,21 @@ class CGSP_Case_Status {
                 <?php endforeach; ?>
             </select></label></p>
             <p><label><strong>עדכון שמוצג ללקוח</strong><br><textarea class="large-text" rows="4" name="cgsp_customer_note" placeholder="לדוגמה: המסמכים התקבלו ונמצאים בבדיקה."><?php echo esc_textarea($note); ?></textarea></label></p>
+            <fieldset style="border:1px solid #dcdcde;padding:16px;border-radius:8px">
+                <legend><strong>אבחון פנימי — חשד להגבלת גיל</strong></legend>
+                <p style="color:#646970">הנתונים באזור זה פנימיים ואינם מוצגים בעמוד הסטטוס של הלקוח.</p>
+                <p><label><strong>תאריך הלידה שמוגדר בחשבון</strong><br><input type="date" name="cgsp_account_birth_date" value="<?php echo esc_attr($account_birth_date); ?>"></label></p>
+                <p><label><strong>סוג דרישת האימות שהתקבלה</strong><br><select name="cgsp_age_verification">
+                    <?php foreach (array('' => 'לא התקבלה / לא ידוע', 'id' => 'מסמך מזהה', 'video' => 'וידאו סלפי', 'parent' => 'אישור הורה', 'appeal' => 'ערעור בתוך החשבון', 'other' => 'אחר') as $key => $label) : ?>
+                        <option value="<?php echo esc_attr($key); ?>" <?php selected($age_verification, $key); ?>><?php echo esc_html($label); ?></option>
+                    <?php endforeach; ?>
+                </select></label></p>
+                <p><strong>נכסי Meta מקושרים שנפגעו או נבדקו</strong></p>
+                <?php foreach (array('facebook' => 'Facebook', 'instagram' => 'Instagram', 'business' => 'Business Manager / חשבון מודעות', 'quest' => 'Meta Quest / משקפיים', 'other' => 'אחר') as $key => $label) : ?>
+                    <label style="display:block;margin:6px 0"><input type="checkbox" name="cgsp_linked_meta_assets[]" value="<?php echo esc_attr($key); ?>" <?php checked(in_array($key, $linked_assets, true)); ?>> <?php echo esc_html($label); ?></label>
+                <?php endforeach; ?>
+                <p><label><strong>הערת אבחון פנימית</strong><br><textarea class="large-text" rows="4" name="cgsp_age_diagnostic_note" placeholder="מה הופיע במסך, מתי החלה ההגבלה ואילו נכסים נוספים הושפעו"><?php echo esc_textarea($age_diagnostic_note); ?></textarea></label></p>
+            </fieldset>
             <?php if ($updated) : ?><p>עדכון אחרון: <strong><?php echo esc_html($updated); ?></strong></p><?php endif; ?>
             <p style="color:#646970">אין להזין כאן סיסמאות, קודי אימות או מידע רגיש.</p>
         </div>
@@ -82,6 +101,11 @@ class CGSP_Case_Status {
         $phone_last4 = isset($_POST['cgsp_phone_last4']) ? preg_replace('/\D/', '', wp_unslash($_POST['cgsp_phone_last4'])) : '';
         $stage = isset($_POST['cgsp_stage']) ? sanitize_key(wp_unslash($_POST['cgsp_stage'])) : 'received';
         $note = isset($_POST['cgsp_customer_note']) ? sanitize_textarea_field(wp_unslash($_POST['cgsp_customer_note'])) : '';
+        $account_birth_date = isset($_POST['cgsp_account_birth_date']) ? sanitize_text_field(wp_unslash($_POST['cgsp_account_birth_date'])) : '';
+        $age_verification = isset($_POST['cgsp_age_verification']) ? sanitize_key(wp_unslash($_POST['cgsp_age_verification'])) : '';
+        $allowed_assets = array('facebook', 'instagram', 'business', 'quest', 'other');
+        $linked_assets = isset($_POST['cgsp_linked_meta_assets']) ? array_values(array_intersect($allowed_assets, array_map('sanitize_key', (array) wp_unslash($_POST['cgsp_linked_meta_assets'])))) : array();
+        $age_diagnostic_note = isset($_POST['cgsp_age_diagnostic_note']) ? sanitize_textarea_field(wp_unslash($_POST['cgsp_age_diagnostic_note'])) : '';
 
         if (!isset($this->stages[$stage])) {
             $stage = 'received';
@@ -91,6 +115,10 @@ class CGSP_Case_Status {
         update_post_meta($post_id, '_cgsp_phone_last4', substr($phone_last4, -4));
         update_post_meta($post_id, '_cgsp_stage', $stage);
         update_post_meta($post_id, '_cgsp_customer_note', $note);
+        update_post_meta($post_id, '_cgsp_account_birth_date', preg_match('/^\d{4}-\d{2}-\d{2}$/', $account_birth_date) ? $account_birth_date : '');
+        update_post_meta($post_id, '_cgsp_age_verification', in_array($age_verification, array('', 'id', 'video', 'parent', 'appeal', 'other'), true) ? $age_verification : '');
+        update_post_meta($post_id, '_cgsp_linked_meta_assets', $linked_assets);
+        update_post_meta($post_id, '_cgsp_age_diagnostic_note', $age_diagnostic_note);
         update_post_meta($post_id, '_cgsp_status_updated', wp_date('d/m/Y H:i'));
     }
 
