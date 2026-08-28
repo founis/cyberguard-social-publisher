@@ -4,7 +4,7 @@ Tags: facebook, instagram, meta, social media, scheduling
 Requires at least: 6.2
 Tested up to: 6.8
 Requires PHP: 7.4
-Stable tag: 0.3.0
+Stable tag: 0.3.1
 License: GPLv2 or later
 
 Publish and schedule CyberGuard content to a Facebook Page and Instagram Business account from WordPress.
@@ -26,6 +26,11 @@ The Meta app/token must have the permissions required by Meta for Page and Insta
 4. Give each customer a case reference. The public lookup also requires the last four phone digits.
 
 == Changelog ==
+
+= 0.3.1 =
+* Added a ready-to-publish Meta age-restriction guide based on the August 2026 official update.
+* Added private age-verification diagnostic fields to customer cases.
+* Fixed the front-end publisher dashboard so it loads every JSON content collection.
 
 = 0.3.0 =
 * Secure customer case-status lookup with a mobile RTL timeline.

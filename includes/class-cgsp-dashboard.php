@@ -155,13 +155,15 @@ class CGSP_Dashboard {
     }
 
     private function load_content_library() {
-        $path = CGSP_DIR . 'content/cyberguard-posts.json';
-        if (!is_readable($path)) {
-            return array();
-        }
-        $posts = json_decode(file_get_contents($path), true);
-        if (!is_array($posts)) {
-            return array();
+        $posts = array();
+        foreach ((array) glob(CGSP_DIR . 'content/*.json') as $path) {
+            if (!is_readable($path)) {
+                continue;
+            }
+            $items = json_decode(file_get_contents($path), true);
+            if (is_array($items)) {
+                $posts = array_merge($posts, $items);
+            }
         }
         return array_values(array_filter($posts, function ($post) {
             return is_array($post) && !empty($post['message']) && (!isset($post['status']) || 'ready' === $post['status']);
