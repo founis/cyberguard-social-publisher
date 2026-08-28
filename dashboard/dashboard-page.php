@@ -132,7 +132,7 @@
                         data-title="<?php echo esc_attr($post['title'] ?? ''); ?>"
                         data-message="<?php echo esc_attr($post['message'] ?? ''); ?>"
                         data-image="<?php echo esc_attr($post['image_url'] ?? ''); ?>"
-                        data-platforms="<?php echo esc_attr(implode(',', array_unique(array_merge(array('website'), $platforms)))); ?>">טען לעורך</button>
+                        data-platforms="<?php echo esc_attr(implode(',', array_unique($platforms))); ?>">טען לעורך</button>
                 </article>
             <?php endforeach; ?>
         </div>
